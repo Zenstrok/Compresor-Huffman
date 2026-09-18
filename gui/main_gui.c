@@ -30,21 +30,28 @@ static const char *NOMBRES_VERSION[CANTIDAD_VERSIONES] = {
 static const char *TITULOS_COLUMNA[CANTIDAD_COLUMNAS + 1] = {
     "Version",
     "Salud (%)",
-    "T. compresion (s)",
-    "T. descompresion (s)",
-    "Acel. compresor (%)",
-    "Acel. descompresor (%)",
-    "Tam. original (B)",
-    "Tam. comprimido (B)",
+    "T. compr. (s)",
+    "T. descompr. (s)",
+    "Acel. compr. (%)",
+    "Acel. descompr. (%)",
+    "Original (B)",
+    "Comprimido (B)",
     "Razon"
 };
 
 typedef struct {
     GtkWindow *ventana;
     GtkWidget *entradaDirectorio;
-    GtkWidget *botonEjecutar;
+    GtkWidget *botonComprimir;
+    GtkWidget *botonDescomprimir;
     GtkWidget *etiquetaEstado;
     GtkWidget *celdas[CANTIDAD_VERSIONES][CANTIDAD_COLUMNAS];
+
+    /* Tiempos de la version serial, que sirven de referencia para
+       calcular las aceleraciones. Se guardan aqui porque ahora la
+       compresion y la descompresion se ejecutan por separado. */
+    double segundosCompresionSerial;
+    double segundosDescompresionSerial;
 } Aplicacion;
 
 /* ---------------------------------------------------------------
@@ -56,14 +63,18 @@ static void ponerCelda(Aplicacion *app, int fila, int columna, const char *texto
     gtk_label_set_text(GTK_LABEL(app->celdas[fila][columna]), texto);
 }
 
-static void limpiarTabla(Aplicacion *app)
+static void limpiarColumnas(Aplicacion *app, const int *columnas, int cantidad)
 {
     for (int fila = 0; fila < CANTIDAD_VERSIONES; fila++) {
-        for (int columna = 0; columna < CANTIDAD_COLUMNAS; columna++) {
-            ponerCelda(app, fila, columna, "—");
+        for (int i = 0; i < cantidad; i++) {
+            ponerCelda(app, fila, columnas[i], "—");
         }
     }
 }
+
+/* Columnas que llena cada corrida */
+static const int COLUMNAS_COMPRESION[]    = { 1, 3, 5, 6, 7 };
+static const int COLUMNAS_DESCOMPRESION[] = { 0, 2, 4 };
 
 /* Crea "base", "base/sub" y devuelve la ruta completa en destino. */
 static int prepararSubdirectorio(char *destino, size_t tamano,
@@ -84,121 +95,146 @@ static int prepararSubdirectorio(char *destino, size_t tamano,
    Ejecucion de las seis corridas
    --------------------------------------------------------------- */
 
-static void ejecutarCorridas(Aplicacion *app, const char *directorio)
-{
-    typedef int (*FuncionCorrida)(const char *, const char *, Estadisticas *);
+typedef int (*FuncionCorrida)(const char *, const char *, Estadisticas *);
 
+/* Arma las rutas resultados/<version>/comprimidos y .../descomprimidos */
+static int prepararCarpetasVersion(const char *version, char *dirComprimido,
+                                   char *dirDescomprimido, size_t tamano)
+{
+    char base[2048];
+
+    if (!asegurarDirectorio("resultados")) {
+        return 0;
+    }
+
+    if ((int)sizeof(base) <= snprintf(base, sizeof(base), "resultados/%s", version)) {
+        return 0;
+    }
+
+    if (!asegurarDirectorio(base)) {
+        return 0;
+    }
+
+    if (!prepararSubdirectorio(dirComprimido, tamano, base, "comprimidos")) {
+        return 0;
+    }
+
+    return prepararSubdirectorio(dirDescomprimido, tamano, base, "descomprimidos");
+}
+
+static void ejecutarCompresion(Aplicacion *app, const char *directorio)
+{
     FuncionCorrida compresores[CANTIDAD_VERSIONES] = {
         comprimirSerial, comprimirParalelo, comprimirConcurrente
     };
 
+    const char *carpetas[CANTIDAD_VERSIONES] = { "serial", "fork", "hilos" };
+
+    app->segundosCompresionSerial = 0.0;
+
+    for (int i = 0; i < CANTIDAD_VERSIONES; i++) {
+        char dirComprimido[4096];
+        char dirDescomprimido[4096];
+
+        if (!prepararCarpetasVersion(carpetas[i], dirComprimido,
+                                     dirDescomprimido, sizeof(dirComprimido))) {
+            gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
+                               "No se pudieron crear las carpetas de resultados.");
+
+            continue;
+        }
+
+        Estadisticas est;
+
+        compresores[i](directorio, dirComprimido, &est);
+
+        if (i == 0 && est.ok) {
+            app->segundosCompresionSerial = est.segundos;
+        }
+
+        char texto[64];
+
+        if (est.ok) {
+            snprintf(texto, sizeof(texto), "%.6f", est.segundos);
+            ponerCelda(app, i, 1, texto);
+
+            snprintf(texto, sizeof(texto), "%zu", est.bytesOriginales);
+            ponerCelda(app, i, 5, texto);
+
+            snprintf(texto, sizeof(texto), "%zu", est.bytesComprimidos);
+            ponerCelda(app, i, 6, texto);
+
+            snprintf(texto, sizeof(texto), "%.3f", estadisticasRazon(&est));
+            ponerCelda(app, i, 7, texto);
+        }
+
+        if (est.ok && 0.0 < app->segundosCompresionSerial) {
+            snprintf(texto, sizeof(texto), "%.1f",
+                     estadisticasAceleracion(app->segundosCompresionSerial,
+                                             est.segundos));
+            ponerCelda(app, i, 3, texto);
+        }
+
+        if (est.mensaje[0] != '\0') {
+            gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), est.mensaje);
+        }
+    }
+}
+
+static void ejecutarDescompresion(Aplicacion *app)
+{
     FuncionCorrida descompresores[CANTIDAD_VERSIONES] = {
         descomprimirSerial, descomprimirParalelo, descomprimirConcurrente
     };
 
     const char *carpetas[CANTIDAD_VERSIONES] = { "serial", "fork", "hilos" };
 
-    double segundosCompresionSerial = 0.0;
-    double segundosDescompresionSerial = 0.0;
+    app->segundosDescompresionSerial = 0.0;
 
     for (int i = 0; i < CANTIDAD_VERSIONES; i++) {
         char dirComprimido[4096];
         char dirDescomprimido[4096];
-        char base[4096];
 
-        snprintf(base, sizeof(base), "resultados/%s", carpetas[i]);
-
-        if (!prepararSubdirectorio(dirComprimido, sizeof(dirComprimido),
-                                   "resultados", carpetas[i]) ||
-            !prepararSubdirectorio(dirComprimido, sizeof(dirComprimido),
-                                   base, "comprimidos") ||
-            !prepararSubdirectorio(dirDescomprimido, sizeof(dirDescomprimido),
-                                   base, "descomprimidos")) {
-            ponerCelda(app, i, 0, "error de carpetas");
+        if (!prepararCarpetasVersion(carpetas[i], dirComprimido,
+                                     dirDescomprimido, sizeof(dirComprimido))) {
+            gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
+                               "No se pudieron crear las carpetas de resultados.");
 
             continue;
         }
 
-        Estadisticas compresion;
-        Estadisticas descompresion;
+        Estadisticas est;
 
-        compresores[i](directorio, dirComprimido, &compresion);
-        descompresores[i](dirComprimido, dirDescomprimido, &descompresion);
+        descompresores[i](dirComprimido, dirDescomprimido, &est);
 
-        if (i == 0) {
-            segundosCompresionSerial = compresion.segundos;
-            segundosDescompresionSerial = descompresion.segundos;
+        if (i == 0 && est.ok) {
+            app->segundosDescompresionSerial = est.segundos;
         }
 
         char texto[64];
 
-        /* --- Columnas que dependen de la descompresion --- */
-        if (descompresion.ok) {
-            snprintf(texto, sizeof(texto), "%.1f", estadisticasSalud(&descompresion));
+        if (est.ok) {
+            snprintf(texto, sizeof(texto), "%.1f", estadisticasSalud(&est));
             ponerCelda(app, i, 0, texto);
 
-            snprintf(texto, sizeof(texto), "%.6f", descompresion.segundos);
+            snprintf(texto, sizeof(texto), "%.6f", est.segundos);
             ponerCelda(app, i, 2, texto);
         }
-        else {
-            ponerCelda(app, i, 0, "—");
-            ponerCelda(app, i, 2, "—");
-        }
 
-        /* --- Columnas que dependen de la compresion --- */
-        if (compresion.ok) {
-            snprintf(texto, sizeof(texto), "%.6f", compresion.segundos);
-            ponerCelda(app, i, 1, texto);
-
-            snprintf(texto, sizeof(texto), "%zu", compresion.bytesOriginales);
-            ponerCelda(app, i, 5, texto);
-
-            snprintf(texto, sizeof(texto), "%zu", compresion.bytesComprimidos);
-            ponerCelda(app, i, 6, texto);
-
-            snprintf(texto, sizeof(texto), "%.3f", estadisticasRazon(&compresion));
-            ponerCelda(app, i, 7, texto);
-        }
-        else {
-            ponerCelda(app, i, 1, "—");
-            ponerCelda(app, i, 5, "—");
-            ponerCelda(app, i, 6, "—");
-            ponerCelda(app, i, 7, "—");
-        }
-
-        /* --- Aceleraciones: solo tienen sentido si ambas corridas
-               (la serial de referencia y la actual) se ejecutaron --- */
-        if (compresion.ok && 0.0 < segundosCompresionSerial) {
+        if (est.ok && 0.0 < app->segundosDescompresionSerial) {
             snprintf(texto, sizeof(texto), "%.1f",
-                     estadisticasAceleracion(segundosCompresionSerial,
-                                             compresion.segundos));
-            ponerCelda(app, i, 3, texto);
-        }
-        else {
-            ponerCelda(app, i, 3, "—");
-        }
-
-        if (descompresion.ok && 0.0 < segundosDescompresionSerial) {
-            snprintf(texto, sizeof(texto), "%.1f",
-                     estadisticasAceleracion(segundosDescompresionSerial,
-                                             descompresion.segundos));
+                     estadisticasAceleracion(app->segundosDescompresionSerial,
+                                             est.segundos));
             ponerCelda(app, i, 4, texto);
         }
-        else {
-            ponerCelda(app, i, 4, "—");
-        }
 
-        /* Si alguna de las dos corridas dejo mensaje, mostrarlo */
-        if (compresion.mensaje[0] != '\0') {
-            gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), compresion.mensaje);
-        }
-        else if (descompresion.mensaje[0] != '\0') {
-            gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), descompresion.mensaje);
+        if (est.mensaje[0] != '\0') {
+            gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), est.mensaje);
         }
     }
 }
 
-static void alPresionarEjecutar(GtkButton *boton, gpointer datos)
+static void alPresionarComprimir(GtkButton *boton, gpointer datos)
 {
     (void)boton;
 
@@ -213,19 +249,45 @@ static void alPresionarEjecutar(GtkButton *boton, gpointer datos)
         return;
     }
 
-    limpiarTabla(app);
-    gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), "Ejecutando las seis corridas...");
-    gtk_widget_set_sensitive(app->botonEjecutar, FALSE);
+    limpiarColumnas(app, COLUMNAS_COMPRESION,
+                    (int)(sizeof(COLUMNAS_COMPRESION) / sizeof(int)));
 
-    ejecutarCorridas(app, directorio);
+    gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), "Comprimiendo...");
+    gtk_widget_set_sensitive(app->botonComprimir, FALSE);
+    gtk_widget_set_sensitive(app->botonDescomprimir, FALSE);
 
-    gtk_widget_set_sensitive(app->botonEjecutar, TRUE);
+    ejecutarCompresion(app, directorio);
 
-    const char *estado = gtk_label_get_text(GTK_LABEL(app->etiquetaEstado));
+    gtk_widget_set_sensitive(app->botonComprimir, TRUE);
+    gtk_widget_set_sensitive(app->botonDescomprimir, TRUE);
 
-    if (strcmp(estado, "Ejecutando las seis corridas...") == 0) {
+    if (strcmp(gtk_label_get_text(GTK_LABEL(app->etiquetaEstado)), "Comprimiendo...") == 0) {
         gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
-                           "Listo. Resultados en la carpeta resultados/.");
+                           "Compresion lista. Los .huff quedaron en resultados/<version>/comprimidos.");
+    }
+}
+
+static void alPresionarDescomprimir(GtkButton *boton, gpointer datos)
+{
+    (void)boton;
+
+    Aplicacion *app = datos;
+
+    limpiarColumnas(app, COLUMNAS_DESCOMPRESION,
+                    (int)(sizeof(COLUMNAS_DESCOMPRESION) / sizeof(int)));
+
+    gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), "Descomprimiendo...");
+    gtk_widget_set_sensitive(app->botonComprimir, FALSE);
+    gtk_widget_set_sensitive(app->botonDescomprimir, FALSE);
+
+    ejecutarDescompresion(app);
+
+    gtk_widget_set_sensitive(app->botonComprimir, TRUE);
+    gtk_widget_set_sensitive(app->botonDescomprimir, TRUE);
+
+    if (strcmp(gtk_label_get_text(GTK_LABEL(app->etiquetaEstado)), "Descomprimiendo...") == 0) {
+        gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
+                           "Descompresion lista. Los .txt quedaron en resultados/<version>/descomprimidos.");
     }
 }
 
@@ -310,7 +372,7 @@ static void construirVentana(GtkApplication *gtkApp, gpointer datos)
     app->ventana = GTK_WINDOW(ventana);
 
     gtk_window_set_title(GTK_WINDOW(ventana), "Compresor Huffman — Proyecto 1");
-    gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 420);
+        gtk_window_set_default_size(GTK_WINDOW(ventana), 900, 400);
 
     GtkWidget *caja = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
 
@@ -339,13 +401,24 @@ static void construirVentana(GtkApplication *gtkApp, gpointer datos)
 
     gtk_box_append(GTK_BOX(caja), filaDirectorio);
 
-    /* --- Boton de ejecucion --- */
-    app->botonEjecutar = gtk_button_new_with_label(
-        "Comprimir y descomprimir con las 3 versiones");
+        /* --- Botones separados --- */
+    GtkWidget *filaBotones = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 
-    g_signal_connect(app->botonEjecutar, "clicked", G_CALLBACK(alPresionarEjecutar), app);
+    app->botonComprimir = gtk_button_new_with_label("Comprimir con las 3 versiones");
+    app->botonDescomprimir = gtk_button_new_with_label("Descomprimir con las 3 versiones");
 
-    gtk_box_append(GTK_BOX(caja), app->botonEjecutar);
+    gtk_widget_set_hexpand(app->botonComprimir, TRUE);
+    gtk_widget_set_hexpand(app->botonDescomprimir, TRUE);
+
+    g_signal_connect(app->botonComprimir, "clicked",
+                     G_CALLBACK(alPresionarComprimir), app);
+    g_signal_connect(app->botonDescomprimir, "clicked",
+                     G_CALLBACK(alPresionarDescomprimir), app);
+
+    gtk_box_append(GTK_BOX(filaBotones), app->botonComprimir);
+    gtk_box_append(GTK_BOX(filaBotones), app->botonDescomprimir);
+
+    gtk_box_append(GTK_BOX(caja), filaBotones);
 
     /* --- Tabla comparativa --- */
     GtkWidget *rejilla = gtk_grid_new();
@@ -369,13 +442,24 @@ static void construirVentana(GtkApplication *gtkApp, gpointer datos)
         }
     }
 
-    GtkWidget *marco = gtk_frame_new("Estadisticas comparativas");
-
     gtk_widget_set_margin_top(rejilla, 12);
     gtk_widget_set_margin_bottom(rejilla, 12);
     gtk_widget_set_margin_start(rejilla, 12);
     gtk_widget_set_margin_end(rejilla, 12);
-    gtk_frame_set_child(GTK_FRAME(marco), rejilla);
+
+    /* La tabla es mas ancha que muchas pantallas, asi que va dentro de
+       un contenedor con barras de desplazamiento */
+    GtkWidget *desplazable = gtk_scrolled_window_new();
+
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(desplazable),
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(desplazable), rejilla);
+    gtk_widget_set_hexpand(desplazable, TRUE);
+    gtk_widget_set_vexpand(desplazable, TRUE);
+
+    GtkWidget *marco = gtk_frame_new("Estadisticas comparativas");
+
+    gtk_frame_set_child(GTK_FRAME(marco), desplazable);
 
     gtk_box_append(GTK_BOX(caja), marco);
 
