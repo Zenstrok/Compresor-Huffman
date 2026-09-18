@@ -1,1 +1,0 @@
-Cafe, nino, comillas y tildes: aeiou AEIOU para probar bytes sobre 127.
