@@ -1,0 +1,29 @@
+#ifndef COMPRESOR_H
+#define COMPRESOR_H
+
+#include <stddef.h>
+#include <stdio.h>
+
+#include "estadisticas.h"
+#include "formato.h"
+#include "huffman.h"
+
+/* Empaqueta los datos en bits usando el diccionario y los escribe.
+   Devuelve 1 si tuvo exito, 0 si hubo error. */
+int escribirDatosComprimidos(FILE *salida, const struct diccionario *diccionario,
+                             const unsigned char *datos, size_t tamano);
+
+/* Comprime un archivo y lo agrega como un bloque mas al paquete que ya
+   esta abierto en 'salida'. Llena 'entrada' con los metadatos del archivo
+   (nombre, tamano original, MD5, offset y tamano del bloque) para que el
+   llamador los agregue al indice.
+   Devuelve 1 si tuvo exito, 0 si hubo error. */
+int agregarArchivoAlPaquete(FILE *salida, const char *rutaOriginal,
+                            EntradaIndice *entrada);
+
+/* Comprime todos los archivos .txt de un directorio en un unico paquete.
+   Devuelve 1 si tuvo exito, 0 si hubo error. */
+int comprimirDirectorio(const char *dirEntrada, const char *rutaPaquete,
+                        Estadisticas *est);
+
+#endif
