@@ -132,32 +132,61 @@ static void ejecutarCorridas(Aplicacion *app, const char *directorio)
 
         char texto[64];
 
-        snprintf(texto, sizeof(texto), "%.1f", estadisticasSalud(&descompresion));
-        ponerCelda(app, i, 0, texto);
+        /* --- Columnas que dependen de la descompresion --- */
+        if (descompresion.ok) {
+            snprintf(texto, sizeof(texto), "%.1f", estadisticasSalud(&descompresion));
+            ponerCelda(app, i, 0, texto);
 
-        snprintf(texto, sizeof(texto), "%.6f", compresion.segundos);
-        ponerCelda(app, i, 1, texto);
+            snprintf(texto, sizeof(texto), "%.6f", descompresion.segundos);
+            ponerCelda(app, i, 2, texto);
+        }
+        else {
+            ponerCelda(app, i, 0, "—");
+            ponerCelda(app, i, 2, "—");
+        }
 
-        snprintf(texto, sizeof(texto), "%.6f", descompresion.segundos);
-        ponerCelda(app, i, 2, texto);
+        /* --- Columnas que dependen de la compresion --- */
+        if (compresion.ok) {
+            snprintf(texto, sizeof(texto), "%.6f", compresion.segundos);
+            ponerCelda(app, i, 1, texto);
 
-        snprintf(texto, sizeof(texto), "%.1f",
-                 estadisticasAceleracion(segundosCompresionSerial, compresion.segundos));
-        ponerCelda(app, i, 3, texto);
+            snprintf(texto, sizeof(texto), "%zu", compresion.bytesOriginales);
+            ponerCelda(app, i, 5, texto);
 
-        snprintf(texto, sizeof(texto), "%.1f",
-                 estadisticasAceleracion(segundosDescompresionSerial,
-                                         descompresion.segundos));
-        ponerCelda(app, i, 4, texto);
+            snprintf(texto, sizeof(texto), "%zu", compresion.bytesComprimidos);
+            ponerCelda(app, i, 6, texto);
 
-        snprintf(texto, sizeof(texto), "%zu", compresion.bytesOriginales);
-        ponerCelda(app, i, 5, texto);
+            snprintf(texto, sizeof(texto), "%.3f", estadisticasRazon(&compresion));
+            ponerCelda(app, i, 7, texto);
+        }
+        else {
+            ponerCelda(app, i, 1, "—");
+            ponerCelda(app, i, 5, "—");
+            ponerCelda(app, i, 6, "—");
+            ponerCelda(app, i, 7, "—");
+        }
 
-        snprintf(texto, sizeof(texto), "%zu", compresion.bytesComprimidos);
-        ponerCelda(app, i, 6, texto);
+        /* --- Aceleraciones: solo tienen sentido si ambas corridas
+               (la serial de referencia y la actual) se ejecutaron --- */
+        if (compresion.ok && 0.0 < segundosCompresionSerial) {
+            snprintf(texto, sizeof(texto), "%.1f",
+                     estadisticasAceleracion(segundosCompresionSerial,
+                                             compresion.segundos));
+            ponerCelda(app, i, 3, texto);
+        }
+        else {
+            ponerCelda(app, i, 3, "—");
+        }
 
-        snprintf(texto, sizeof(texto), "%.3f", estadisticasRazon(&compresion));
-        ponerCelda(app, i, 7, texto);
+        if (descompresion.ok && 0.0 < segundosDescompresionSerial) {
+            snprintf(texto, sizeof(texto), "%.1f",
+                     estadisticasAceleracion(segundosDescompresionSerial,
+                                             descompresion.segundos));
+            ponerCelda(app, i, 4, texto);
+        }
+        else {
+            ponerCelda(app, i, 4, "—");
+        }
 
         /* Si alguna de las dos corridas dejo mensaje, mostrarlo */
         if (compresion.mensaje[0] != '\0') {
