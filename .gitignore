@@ -1,0 +1,10 @@
+# Compilados
+build/
+comprimir
+descomprimir
+comprimir-gui
+*.o
+
+# Salida generada
+resultados/
+*.huff
