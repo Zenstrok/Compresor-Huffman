@@ -1,0 +1,1 @@
+El algoritmo de Huffman asigna codigos cortos a los caracteres frecuentes y codigos largos a los raros. Esta es una prueba pequena.

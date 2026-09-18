@@ -1,0 +1,1 @@
+La sincronizacion es necesaria cuando varios procesos o hilos trabajan al mismo tiempo sobre el mismo recurso compartido.
