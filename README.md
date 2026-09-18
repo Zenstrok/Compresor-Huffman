@@ -65,21 +65,21 @@ build/       objetos intermedios (se genera solo)
 
 ### Módulos
 
-| Módulo | Estado | Responsable |
-|---|---|---|
-| `huffman` — árbol y diccionario | Listo | Kendall / Tzu |
-| `md5` — firmas | Listo | Tzu |
-| `archivo` — lectura a memoria | Listo | Tzu |
-| `formato` — escritura del `.huff` | Listo | Tzu |
-| `formato` — lectura del `.huff` | Pendiente | Mario |
-| `directorio` — recorrido de carpetas | Listo | — |
-| `estadisticas` — métricas y reloj | Listo | — |
-| `compresor` — compresión de un archivo | Listo | Tzu |
-| `descompresor` — descompresión de un archivo | **Pendiente** | Mario |
-| `serial` — corrida secuencial | Listo | — |
-| `paralelo` — `fork()` + IPC | **Pendiente** | Kendall |
-| `concurrente` — `pthread` | **Pendiente** | — |
-| `gui` — interfaz gráfica | Esqueleto funcional | — |
+| Módulo | Estado |
+|---|---|
+| `huffman` — árbol y diccionario | Listo |
+| `md5` — firmas | Listo |
+| `archivo` — lectura a memoria | Listo |
+| `formato` — escritura del `.huff` | Listo |
+| `formato` — lectura del `.huff` | Pendiente |
+| `directorio` — recorrido de carpetas | Listo |
+| `estadisticas` — métricas y reloj | Listo |
+| `compresor` — compresión de un archivo | Listo |
+| `descompresor` — descompresión de un archivo | **Pendiente** |
+| `serial` — corrida secuencial | Listo |
+| `paralelo` — `fork()` + IPC | **Pendiente** |
+| `concurrente` — `pthread` | **Pendiente** |
+| `gui` — interfaz gráfica | Esqueleto funcional |
 
 Cada archivo pendiente trae en su encabezado el esquema de lo que debe hacer.
 
