@@ -1,0 +1,253 @@
+------------------------------
+COMPRESION SERIAL
+------------------------------
+
+--- Compresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 6.815926 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 6.747929 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 6.619932 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 6.619934 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 6.695935 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+
+------------------------------
+DESCOMPRESION SERIAL
+------------------------------
+
+--- Descompresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 1.883986 s
+
+--- Descompresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 1.943986 s
+
+--- Descompresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 1.735988 s
+
+--- Descompresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 1.671988 s
+
+--- Descompresion (serial) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 1.771988 s
+
+
+------------------------------
+COMPRESION FORK
+------------------------------
+
+--- Compresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.555990 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.599990 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.331992 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.343992 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.351992 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+
+------------------------------
+DESCOMPRESION FORK
+------------------------------
+
+--- Descompresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.347998 s
+
+--- Descompresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.487997 s
+
+--- Descompresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.635996 s
+
+--- Descompresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.271998 s
+
+--- Descompresion (fork) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.355998 s
+
+
+------------------------------
+COMPRESION HILOS
+------------------------------
+
+--- Compresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.227994 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.371993 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.227994 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.163994 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+--- Compresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Tiempo total        : 1.211994 s
+Bytes originales    : 79935685
+Tamano del paquete  : 46082752
+Razon de compresion : 0.576
+
+
+------------------------------
+DESCOMPRESION HILOS
+------------------------------
+
+--- Descompresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.299999 s
+
+--- Descompresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.343999 s
+
+--- Descompresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.279999 s
+
+--- Descompresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.491998 s
+
+--- Descompresion (hilos) ---
+Archivos procesados : 100
+Archivos correctos  : 100
+Firmas verificadas  : 100
+Salud               : 100.0 %
+Tiempo total        : 0.359998 s

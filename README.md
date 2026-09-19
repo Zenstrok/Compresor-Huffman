@@ -41,8 +41,8 @@ make clean && make && make gui
 Ejemplo:
 
 ```bash
-./comprimir serial pruebas/libros paquete.huff
-./descomprimir serial paquete.huff pruebas/restaurados
+./comprimir serial ./libros paquete.huff
+./descomprimir serial paquete.huff resultados/serial/descomprimidos
 ```
 
 Todos los archivos del directorio quedan dentro de un unico `.huff`, con la
