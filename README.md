@@ -26,6 +26,11 @@ make gui    # además la interfaz gráfica: comprimir-gui
 make clean  # borra todo lo compilado
 ```
 
+Más Fácil:
+```bash
+make clean && make && make gui
+```
+
 ## Uso desde consola
 
 ```bash
