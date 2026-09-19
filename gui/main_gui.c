@@ -42,6 +42,7 @@ static const char *TITULOS_COLUMNA[CANTIDAD_COLUMNAS + 1] = {
 typedef struct {
     GtkWindow *ventana;
     GtkWidget *entradaDirectorio;
+    GtkWidget *entradaPaquete;
     GtkWidget *botonComprimir;
     GtkWidget *botonDescomprimir;
     GtkWidget *etiquetaEstado;
@@ -78,9 +79,9 @@ static const int COLUMNAS_DESCOMPRESION[] = { 0, 2, 4 };
 
 typedef int (*FuncionCorrida)(const char *, const char *, Estadisticas *);
 
-/* Arma resultados/<version>/paquete.huff y resultados/<version>/descomprimidos */
-static int prepararRutasVersion(const char *version, char *rutaPaquete,
-                                char *dirDescomprimido, size_t tamano)
+/* Arma resultados/<version>/descomprimidos */
+static int prepararSalidaVersion(const char *version, char *dirDescomprimido,
+                                 size_t tamano)
 {
     char base[2048];
 
@@ -96,15 +97,31 @@ static int prepararRutasVersion(const char *version, char *rutaPaquete,
         return 0;
     }
 
-    if ((int)tamano <= snprintf(rutaPaquete, tamano, "%s/paquete.huff", base)) {
-        return 0;
-    }
-
     if ((int)tamano <= snprintf(dirDescomprimido, tamano, "%s/descomprimidos", base)) {
         return 0;
     }
 
     return asegurarDirectorio(dirDescomprimido);
+}
+
+/* Arma resultados/<version>/paquete.huff, que es donde escribe el compresor */
+static int rutaPaqueteVersion(const char *version, char *rutaPaquete, size_t tamano)
+{
+    char base[2048];
+
+    if (!asegurarDirectorio("resultados")) {
+        return 0;
+    }
+
+    if ((int)sizeof(base) <= snprintf(base, sizeof(base), "resultados/%s", version)) {
+        return 0;
+    }
+
+    if (!asegurarDirectorio(base)) {
+        return 0;
+    }
+
+    return snprintf(rutaPaquete, tamano, "%s/paquete.huff", base) < (int)tamano;
 }
 
 static void ejecutarCompresion(Aplicacion *app, const char *directorio)
@@ -118,11 +135,10 @@ static void ejecutarCompresion(Aplicacion *app, const char *directorio)
     app->segundosCompresionSerial = 0.0;
 
     for (int i = 0; i < CANTIDAD_VERSIONES; i++) {
-        char rutaPaquete[4096];
-        char dirDescomprimido[4096];
 
-        if (!prepararRutasVersion(carpetas[i], rutaPaquete,
-                                  dirDescomprimido, sizeof(rutaPaquete))) {
+        char rutaPaquete[4096];
+
+        if (!rutaPaqueteVersion(carpetas[i], rutaPaquete, sizeof(rutaPaquete))) {
             gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
                                "No se pudieron crear las carpetas de resultados.");
 
@@ -164,9 +180,16 @@ static void ejecutarCompresion(Aplicacion *app, const char *directorio)
             gtk_label_set_text(GTK_LABEL(app->etiquetaEstado), est.mensaje);
         }
     }
+
+    /* Dejar listo el paquete recien creado como sugerencia para descomprimir */
+    char rutaSerial[4096];
+
+    if (rutaPaqueteVersion("serial", rutaSerial, sizeof(rutaSerial))) {
+        gtk_editable_set_text(GTK_EDITABLE(app->entradaPaquete), rutaSerial);
+    }
 }
 
-static void ejecutarDescompresion(Aplicacion *app)
+static void ejecutarDescompresion(Aplicacion *app, const char *rutaPaquete)
 {
     FuncionCorrida descompresores[CANTIDAD_VERSIONES] = {
         descomprimirSerial, descomprimirParalelo, descomprimirConcurrente
@@ -177,11 +200,10 @@ static void ejecutarDescompresion(Aplicacion *app)
     app->segundosDescompresionSerial = 0.0;
 
     for (int i = 0; i < CANTIDAD_VERSIONES; i++) {
-        char rutaPaquete[4096];
         char dirDescomprimido[4096];
 
-        if (!prepararRutasVersion(carpetas[i], rutaPaquete,
-                                  dirDescomprimido, sizeof(rutaPaquete))) {
+        if (!prepararSalidaVersion(carpetas[i], dirDescomprimido,
+                                   sizeof(dirDescomprimido))) {
             gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
                                "No se pudieron crear las carpetas de resultados.");
 
@@ -258,6 +280,15 @@ static void alPresionarDescomprimir(GtkButton *boton, gpointer datos)
 
     Aplicacion *app = datos;
 
+    const char *rutaPaquete = gtk_editable_get_text(GTK_EDITABLE(app->entradaPaquete));
+
+    if (rutaPaquete == NULL || rutaPaquete[0] == '\0') {
+        gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
+                           "Escoja primero un paquete .huff para descomprimir.");
+
+        return;
+    }
+
     limpiarColumnas(app, COLUMNAS_DESCOMPRESION,
                     (int)(sizeof(COLUMNAS_DESCOMPRESION) / sizeof(int)));
 
@@ -265,20 +296,63 @@ static void alPresionarDescomprimir(GtkButton *boton, gpointer datos)
     gtk_widget_set_sensitive(app->botonComprimir, FALSE);
     gtk_widget_set_sensitive(app->botonDescomprimir, FALSE);
 
-    ejecutarDescompresion(app);
+    ejecutarDescompresion(app, rutaPaquete);
 
     gtk_widget_set_sensitive(app->botonComprimir, TRUE);
     gtk_widget_set_sensitive(app->botonDescomprimir, TRUE);
 
-    if (strcmp(gtk_label_get_text(GTK_LABEL(app->etiquetaEstado)), "Descomprimiendo...") == 0) {
+    if (strcmp(gtk_label_get_text(GTK_LABEL(app->etiquetaEstado)),
+               "Descomprimiendo...") == 0) {
         gtk_label_set_text(GTK_LABEL(app->etiquetaEstado),
-                           "Descompresion lista. Los .txt quedaron en resultados/<version>/descomprimidos.");
+                           "Descompresion lista. Los archivos quedaron en "
+                           "resultados/<version>/descomprimidos.");
     }
 }
 
 /* ---------------------------------------------------------------
    Selector de directorio
    --------------------------------------------------------------- */
+
+static void alEscogerPaquete(GObject *fuente, GAsyncResult *resultado, gpointer datos)
+{
+    Aplicacion *app = datos;
+    GtkFileDialog *dialogo = GTK_FILE_DIALOG(fuente);
+    GError *error = NULL;
+
+    GFile *archivo = gtk_file_dialog_open_finish(dialogo, resultado, &error);
+
+    if (archivo == NULL) {
+        /* El usuario cancelo */
+        if (error != NULL) {
+            g_error_free(error);
+        }
+
+        return;
+    }
+
+    char *ruta = g_file_get_path(archivo);
+
+    if (ruta != NULL) {
+        gtk_editable_set_text(GTK_EDITABLE(app->entradaPaquete), ruta);
+        g_free(ruta);
+    }
+
+    g_object_unref(archivo);
+}
+
+static void alPresionarExaminarPaquete(GtkButton *boton, gpointer datos)
+{
+    (void)boton;
+
+    Aplicacion *app = datos;
+
+    GtkFileDialog *dialogo = gtk_file_dialog_new();
+
+    gtk_file_dialog_set_title(dialogo, "Escoja el paquete comprimido (.huff)");
+    gtk_file_dialog_open(dialogo, app->ventana, NULL, alEscogerPaquete, app);
+
+    g_object_unref(dialogo);
+}
 
 static void alEscogerCarpeta(GObject *fuente, GAsyncResult *resultado, gpointer datos)
 {
@@ -357,7 +431,7 @@ static void construirVentana(GtkApplication *gtkApp, gpointer datos)
     app->ventana = GTK_WINDOW(ventana);
 
     gtk_window_set_title(GTK_WINDOW(ventana), "Compresor Huffman — Proyecto 1");
-        gtk_window_set_default_size(GTK_WINDOW(ventana), 900, 400);
+    gtk_window_set_default_size(GTK_WINDOW(ventana), 900, 400);
 
     GtkWidget *caja = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
 
@@ -386,7 +460,28 @@ static void construirVentana(GtkApplication *gtkApp, gpointer datos)
 
     gtk_box_append(GTK_BOX(caja), filaDirectorio);
 
-        /* --- Botones separados --- */
+    /* --- Fila del paquete comprimido --- */
+    GtkWidget *filaPaquete = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+
+    GtkWidget *etiquetaPaquete = gtk_label_new("Paquete:");
+
+    app->entradaPaquete = gtk_entry_new();
+    gtk_widget_set_hexpand(app->entradaPaquete, TRUE);
+    gtk_entry_set_placeholder_text(GTK_ENTRY(app->entradaPaquete),
+                                   "Ruta del archivo .huff a descomprimir");
+
+    GtkWidget *botonExaminarPaquete = gtk_button_new_with_label("Examinar...");
+
+    g_signal_connect(botonExaminarPaquete, "clicked",
+                     G_CALLBACK(alPresionarExaminarPaquete), app);
+
+    gtk_box_append(GTK_BOX(filaPaquete), etiquetaPaquete);
+    gtk_box_append(GTK_BOX(filaPaquete), app->entradaPaquete);
+    gtk_box_append(GTK_BOX(filaPaquete), botonExaminarPaquete);
+
+    gtk_box_append(GTK_BOX(caja), filaPaquete);
+
+    /* --- Botones separados --- */
     GtkWidget *filaBotones = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 
     app->botonComprimir = gtk_button_new_with_label("Comprimir con las 3 versiones");
