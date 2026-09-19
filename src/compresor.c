@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,6 +141,37 @@ limpiar:
     liberarArbol(raiz);
 
     return resultado;
+}
+
+int comprimirArchivoABuffer(const char *rutaOriginal, char **buffer,
+                            size_t *tamano, EntradaIndice *entrada)
+{
+    *buffer = NULL;
+    *tamano = 0;
+
+    /* open_memstream devuelve un FILE * que escribe a un buffer en memoria
+       en vez de a un archivo, asi que se puede reusar tal cual la misma
+       funcion que arma el bloque. */
+    FILE *memoria = open_memstream(buffer, tamano);
+
+    if (memoria == NULL) {
+        return 0;
+    }
+
+    int resultado = agregarArchivoAlPaquete(memoria, rutaOriginal, entrada);
+
+    /* El buffer y el tamano quedan definidos hasta despues del fclose */
+    fclose(memoria);
+
+    if (!resultado) {
+        free(*buffer);
+        *buffer = NULL;
+        *tamano = 0;
+
+        return 0;
+    }
+
+    return 1;
 }
 
 int comprimirDirectorio(const char *dirEntrada, const char *rutaPaquete,
