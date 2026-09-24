@@ -116,18 +116,42 @@ void liberarListaArchivos(ListaArchivos *lista)
 
 int asegurarDirectorio(const char *ruta)
 {
-    struct stat info;
-
-    if (stat(ruta, &info) == 0) {
-        return S_ISDIR(info.st_mode) ? 1 : 0;
-    }
-
-    if (mkdir(ruta, 0755) != 0) {
-        perror("Error de directorio: no se pudo crear");
-
+    char parcial[4096];
+    size_t largo = strlen(ruta);
+    if (largo == 0 || sizeof(parcial) <= largo)
+    {
         return 0;
     }
-
+    strcpy(parcial, ruta);
+    /* Crear cada nivel de la ruta, como hace "mkdir -p": si se pide
+    resultados/serial/descomprimidos y no existe resultados/, se crean
+    los tres niveles en orden. */
+    for (size_t i = 1; i <= largo; i++)
+    {
+        if (parcial[i] != '/' && parcial[i] != '\0')
+        {
+            continue;
+        }
+        char original = parcial[i];
+        parcial[i] = '\0';
+        struct stat info;
+        if (stat(parcial, &info) != 0)
+        {
+            if (mkdir(parcial, 0755) != 0 && errno != EEXIST)
+            {
+                perror("Error de directorio: no se pudo crear");
+                return 0;
+            }
+        }
+        else if (!S_ISDIR(info.st_mode))
+        {
+            fprintf(stderr,
+                    "Error de directorio: %s existe y no es un directorio\n",
+                    parcial);
+            return 0;
+        }
+        parcial[i] = original;
+    }
     return 1;
 }
 
