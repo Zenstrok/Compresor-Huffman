@@ -79,14 +79,14 @@ build/       objetos intermedios (se genera solo)
 | `md5` — firmas | Listo |
 | `archivo` — lectura a memoria | Listo |
 | `formato` — escritura del `.huff` | Listo |
-| `formato` — lectura del `.huff` | Pendiente |
+| `formato` — lectura del `.huff` | listo |
 | `directorio` — recorrido de carpetas | Listo |
 | `estadisticas` — métricas y reloj | Listo |
 | `compresor` — compresión de un archivo | Listo |
-| `descompresor` — descompresión de un archivo | **Pendiente** |
+| `descompresor` — descompresión de un archivo | Listo |
 | `serial` — corrida secuencial | Listo |
-| `paralelo` — `fork()` + IPC | **Pendiente** |
-| `concurrente` — `pthread` | **Pendiente** |
+| `paralelo` — `fork()` + IPC | Listo |
+| `concurrente` — `pthread` | Listo* |
 | `gui` — interfaz gráfica | Esqueleto funcional |
 
 Cada archivo pendiente trae en su encabezado el esquema de lo que debe hacer.
