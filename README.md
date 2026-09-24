@@ -67,7 +67,7 @@ después el de descomprimir. Los resultados quedan en
 include/     interfaces públicas de cada módulo (.h)
 src/         implementaciones (.c)
 gui/         interfaz gráfica en GTK 4
-pruebas/     archivos de ejemplo
+libros/      libros extraídos en formato .txt
 build/       objetos intermedios (se genera solo)
 ```
 
@@ -86,8 +86,8 @@ build/       objetos intermedios (se genera solo)
 | `descompresor` — descompresión de un archivo | Listo |
 | `serial` — corrida secuencial | Listo |
 | `paralelo` — `fork()` + IPC | Listo |
-| `concurrente` — `pthread` | Listo* |
-| `gui` — interfaz gráfica | Esqueleto funcional |
+| `concurrente` — `pthread` | Listo |
+| `gui` — interfaz gráfica | Listo |
 
 Cada archivo pendiente trae en su encabezado el esquema de lo que debe hacer.
 
@@ -96,8 +96,3 @@ Cada archivo pendiente trae en su encabezado el esquema de lo que debe hacer.
 Documentado en detalle en `include/formato.h`: encabezado de 20 bytes,
 bloques de Huffman uno por archivo, e índice al final con el nombre, el
 tamaño original, el MD5 y el offset de cada archivo.
-
-## Nota sobre el corpus
-
-Los 100 libros de Gutenberg no se versionan (ver `.gitignore`). Colóquelos
-en `pruebas/libros/` después de clonar.
