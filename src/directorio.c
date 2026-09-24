@@ -4,7 +4,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
+#include <errno.h>
 #include "directorio.h"
 
 static int terminaEn(const char *texto, const char *sufijo)
