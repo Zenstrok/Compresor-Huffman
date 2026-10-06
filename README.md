@@ -1,3 +1,30 @@
+# Huffman Compressor — Serial, Parallel & Concurrent (C)
+
+> 🇬🇧 **English summary** · Versión en español más abajo.
+
+A file compression tool written in **C** that compresses and decompresses entire directories of text files using **Huffman coding**. Built for the Operating Systems course (IC6600) at Instituto Tecnológico de Costa Rica, it implements the same pipeline in **three versions** to compare performance:
+
+- **Serial** — processes files sequentially.
+- **Parallel** — uses `fork()` and inter-process communication (IPC).
+- **Concurrent** — uses POSIX threads (`pthread`) and shared memory.
+
+**Key features**
+- Packs every file in a directory into a single `.huff` archive with a custom binary format (20-byte header, one Huffman block per file, and an index with name, original size, MD5 hash and offset).
+- Verifies file integrity after decompression with **MD5** (OpenSSL).
+- Includes a **GTK 4** graphical interface that runs and compares the three versions.
+
+**Tech:** C · POSIX threads · fork/IPC · OpenSSL · GTK 4 · Make · Linux
+
+**Quick start**
+```bash
+sudo apt install build-essential libssl-dev libgtk-4-dev
+make clean && make && make gui
+./comprimir serial ./libros paquete.huff
+./descomprimir serial paquete.huff resultados/serial/descomprimidos
+```
+
+---
+
 # Proyecto 1 — Compresor Huffman
 
 IC6600 Principios de Sistemas Operativos — Instituto Tecnológico de Costa Rica
